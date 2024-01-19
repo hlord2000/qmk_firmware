@@ -955,3 +955,8 @@ ifeq ($(strip $(UART_DRIVER_REQUIRED)), yes)
     OPT_DEFS += -DHAL_USE_SERIAL=TRUE
     QUANTUM_LIB_SRC += uart.c
 endif
+
+LITTLEFS_ENABLE ?= no
+ifeq ($(strip $(LITTLEFS_ENABLE)), yes)
+    include $(PLATFORM_PATH)/$(PLATFORM_KEY)/$(DRIVER_DIR)/littlefs/rules.mk
+endif
