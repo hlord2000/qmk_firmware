@@ -10,6 +10,7 @@
         "device_version": "0.0.1"
     },
     "features": {
+        "rgblight": true,
         "bootmagic": true,
         "command": false,
         "console": false,
@@ -17,10 +18,31 @@
         "mousekey": true,
         "nkro": true
     },
+
     "diode_direction": "COL2ROW",
     "matrix_pins": {
         "rows": ["GP18", "GP17", "GP9", "GP20", "GP21", "GP23", "GP19", "GP24", "GP22"],
         "cols": ["GP7", "GP2", "GP3", "GP4", "GP5", "GP6", "GP8", "GP10"]
+    },
+    "ws2812": {
+        "pin": "GP11",
+        "driver": "vendor"
+    },
+    "rgblight": {
+        "led_count": 13,
+        "sleep": true,
+        "animations": {
+            "alternating": true,
+            "breathing": true,
+            "christmas": true,
+            "knight": true,
+            "rainbow_mood": true,
+            "rainbow_swirl": true,
+            "rgb_test": true,
+            "snake": true,
+            "static_gradient": true,
+            "twinkle": true
+        }
     },
     "layouts": {
         "LAYOUT": {
