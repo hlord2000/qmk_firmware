@@ -98,3 +98,150 @@ void housekeeping_task_kb(void) {
 }
 #endif //QUANTUM_PAINTER_ENABLE
 
+#ifdef VIA_ENABLE
+
+/* Custom VIA commands for image, clock management */
+
+#define IMG_NAME_LEN 54
+
+/* Magnum command IDs. Must be first byte of the packet */
+
+/*
+*  Image commands
+*  N.B.:
+*  - Image names are limited to 54 characters, excluding the null terminator.
+*  - Image data must be received in proper packet_id order.
+*    If packets are not sent in order the image will be deleted.
+*
+* To create a new image:
+* 1. Send a create image or create image animated command
+*    a. Populate the image name, width, and height
+*    b. For create image animated, populate the frame count and frame delay
+* 2. Send a number of write image commands
+* 3. When complete, send a close image command
+*
+* To delete an image:
+* 1. Send a delete image command
+*    a. Populate the image name
+*
+* To choose an image:
+* 1. Send a choose image command
+*    a. Populate the image name
+*
+* To get the remaining flash space:
+* 1. Send a flash remaining command
+*
+* To set the time:
+* 1. Send a set time command
+*   a. Populate time as a Unix timestamp
+*
+*/
+
+enum magnum_command_id {
+    id_magnum_create_image          = 0x50,
+    id_magnum_create_image_animated = 0x51,
+    id_magnum_open_image            = 0x52
+    id_magnum_write_image           = 0x53,
+    id_magnum_close_image           = 0x54,
+    id_magnum_delete_image          = 0x55,
+    id_magnum_choose_image          = 0x56,
+    id_magnum_flash_remaining       = 0x57,
+    id_magnum_set_time              = 0x58,
+};
+
+#define MAGNUM_RET_SUCCESS                0xE0
+#define MAGNUM_RET_IMAGE_ALREADY_EXISTS   0xE1
+#define MAGNUM_RET_IMAGE_FLASH_FULL       0xE2
+#define MAGNUM_RET_IMAGE_W_OOB            0xE3
+#define MAGNUM_RET_IMAGE_H_OOB            0xE4
+#define MAGNUM_RET_IMAGE_NAME_IN_USE      0xE5
+#define MAGNUM_RET_IMAGE_NOT_FOUND        0xE6
+#define MAGNUM_RET_IMAGE_NOT_OPEN         0xE7
+#define MAGNUM_RET_IMAGE_PACKET_ID_ERR    0xE8
+#define MAGNUM_RET_FLASH_REMAINING        0xE9
+#define MAGNUM_RET_INVALID_COMMAND        0xEF
+
+struct packet_header {
+    uint8_t  command_id;
+    uint32_t packet_id;
+};
+
+struct img_create_packet {
+    struct packet_header header;
+    uint8_t  width;
+    uint8_t  height;
+    uint8_t  image_name[IMG_NAME_LEN];
+};
+
+struct img_create_animated_packet {
+    struct packet_header header;
+    uint8_t  width;
+    uint8_t  height;
+    uint8_t  image_name[IMG_NAME_LEN];
+    uint8_t  frame_count;
+    uint8_t  frame_delay;
+};
+
+struct img_open_packet {
+    struct packet_header header;
+    uint8_t  image_name[IMG_NAME_LEN];
+};
+
+struct img_write_packet {
+    struct packet_header header;
+    uint8_t  packet_data[57];
+};
+
+struct img_close_packet {
+    struct packet_header header;
+};
+
+struct img_delete_packet {
+    struct packet_header header;
+    uint8_t  image_name[IMG_NAME_LEN];
+};
+
+struct img_choose_packet {
+    struct packet_header header;
+    uint8_t  image_name[IMG_NAME_LEN];
+};
+
+struct img_flash_remaining_packet {
+    struct packet_header header;
+};
+
+struct img_set_time_packet {
+    struct packet_header header;
+    uint32_t  time;
+};
+
+/* TODO: Implement basic response to these commands */
+
+void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
+    uint8_t *command_id = &(data[0]);
+    uint8_t *command_data = &(data[1]);
+
+    switch (*command_id) {
+        case id_magnum_create_image:
+            break;
+        case id_magnum_create_image_animated:
+            break;
+        case id_magnum_open_image:
+            break;
+        case id_magnum_write_image:
+            break;
+        case id_magnum_close_image:
+            break;
+        case id_magnum_delete_image:
+            break;
+        case id_magnum_choose_image:
+            break;
+        case id_magnum_flash_remaining:
+            break;
+        case id_magnum_set_time:
+            break;
+        default:
+            break;
+    }
+}
+#endif
