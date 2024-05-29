@@ -14,13 +14,8 @@ extern char __flash_binary_end;
 
 static int rp2040_flash_read(const struct lfs_config *c, lfs_block_t block,
         lfs_off_t off, void *buffer, lfs_size_t size) {
-
-    volatile uint32_t debug_flash_binary_end = FLASH_BINARY_END;
-    volatile uint32_t debug_flash_base = FILE_SYSTEM_RP2040_FLASH_BASE;
-    volatile uint32_t debug_flash_xip_base = XIP_BASE;
-    volatile uint32_t debug_flash_xip_nocache_noalloc_base = XIP_NOCACHE_NOALLOC_BASE;
-
-    memcpy(buffer, (FILE_SYSTEM_RP2040_FLASH_BASE + (block * c->block_size) + off) + XIP_BASE, size);
+    const void *addr = (void *)((FILE_SYSTEM_RP2040_FLASH_BASE + (block * c->block_size) + off) + XIP_BASE);
+    memcpy(buffer, addr, size);
     return 0;
 }
 
@@ -104,6 +99,11 @@ int rp2040_mount_lfs(lfs_t *lfs) {
         lfs_format(lfs, &cfg);
         lfs_mount(lfs, &cfg);
     }
+    return 0;
+}
+
+int rp2040_format_lfs(lfs_t *lfs) {
+    lfs_format(lfs, &cfg);
     return 0;
 }
 
