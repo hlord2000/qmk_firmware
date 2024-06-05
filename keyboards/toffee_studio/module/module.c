@@ -8,7 +8,6 @@
 #include "qp.h"
 #include "qp_st7735.h"
 #include "graphics/thintel15.qff.c"
-//#include "graphics/Crimson_Light.c"
 #include "qp_lvgl.h"
 #include "lvgl.h"
 
@@ -18,9 +17,9 @@
 
 #define INIT_PATH_LEN 16
 
-#define IMG_NAME_LEN 54
+#define IMG_NAME_LEN 26
 
-/* Magnum command IDs. Must be first byte of the packet */
+/* Module command IDs. Must be first byte of the packet */
 
 /*
 *  Image commands
@@ -53,17 +52,17 @@
 *
 */
 
-enum magnum_command_id {
-    id_magnum_create_image          = 0x50,
-    id_magnum_create_image_animated = 0x51,
-    id_magnum_open_image            = 0x52,
-    id_magnum_write_image           = 0x53,
-    id_magnum_close_image           = 0x54,
-    id_magnum_delete_image          = 0x55,
-    id_magnum_choose_image          = 0x56,
-    id_magnum_flash_remaining       = 0x57,
-    id_magnum_format_filesystem     = 0x58,
-    id_magnum_set_time              = 0x59,
+enum module_command_id {
+    id_module_create_image          = 0x50,
+    id_module_create_image_animated = 0x51,
+    id_module_open_image            = 0x52,
+    id_module_write_image           = 0x53,
+    id_module_close_image           = 0x54,
+    id_module_delete_image          = 0x55,
+    id_module_choose_image          = 0x56,
+    id_module_flash_remaining       = 0x57,
+    id_module_format_filesystem     = 0x58,
+    id_module_set_time              = 0x59,
 };
 
 #define MAGNUM_RET_SUCCESS                0xE0
@@ -177,23 +176,16 @@ __attribute__((weak)) void ui_init(void) {
     qp_power(oled, true);
 
     if (qp_lvgl_attach(oled)) {
-        volatile lv_fs_drv_t *err;
+        volatile lv_fs_drv_t *result;
 
-        err = lv_fs_littlefs_set_driver(LV_FS_LITTLEFS_LETTER, &lfs);
-        if (err != NULL) {
-            uprintf("Error mounting LFS: %d\n", err);
+        result = lv_fs_littlefs_set_driver(LV_FS_LITTLEFS_LETTER, &lfs);
+        if (result == NULL) {
+            uprintf("Error mounting LFS");
         }
 
         lv_obj_t *background = lv_obj_create(lv_scr_act());
         lv_obj_set_size(background, 128, 160);
         lv_obj_set_style_bg_color(background, lv_color_hex(0xFF0000), 0);
-
-#if 0
-        LV_IMG_DECLARE(Crimson_Light);
-        lv_obj_t *img = lv_gif_create(lv_scr_act());
-        lv_gif_set_src(img, &Crimson_Light);
-        lv_obj_align(img, LV_ALIGN_CENTER, 0, 0);
-#endif
     }
 }
 
@@ -223,62 +215,62 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
     int err;
     lv_fs_res_t res;
     switch (*command_id) {
-        case id_magnum_create_image:
-            uprintf("Create image\n");
-            char * image_name = (char *)command_data;
+    case id_module_create_image:
+        struct img_create_packet *create_packet = (struct img_create_packet *)command_data;
 
-            err = lfs_file_open(&lfs, &lfs_current_file, command_data, LFS_O_CREAT);
-            if (err < 0) {
-                uprintf("Error opening file, littlefs: %d\n", err);
-            }
+        err = lfs_file_open(&lfs, &lfs_current_file, create_packet->image_name, \
+                LFS_O_RDWR | LFS_O_CREAT);
+        if (err < 0) {
+            uprintf("Error creating file, littlefs: %d\n", err);
+        }
 
-            err = lfs_file_close(&lfs, &lfs_current_file);
-            if (err < 0) {
-                uprintf("Error closing file, littlefs: %d\n", err);
-            }
+        err = lfs_file_close(&lfs, &lfs_current_file);
+        if (err < 0) {
+            uprintf("Error closing file, littlefs: %d\n", err);
+        }
 
-            uprintf("Success\n");
+        uprintf("Success\n");
 
-            break;
-        case id_magnum_create_image_animated:
-            uprintf("Create image animated\n");
-            break;
-        case id_magnum_open_image:
-            uprintf("Open image\n");
-            break;
-        case id_magnum_write_image:
-            uprintf("Write image\n");
-            break;
-        case id_magnum_close_image:
-            uprintf("Close image\n");
-            break;
-        case id_magnum_delete_image:
-            uprintf("Delete image\n");
-            break;
-        case id_magnum_choose_image:
-            uprintf("Choose image\n");
-            break;
-        case id_magnum_flash_remaining:
-            uprintf("Flash remaining\n");
-            break;
-        case id_magnum_format_filesystem:
-            uprintf("Format filesystem\n");
-            err = rp2040_format_lfs(&lfs);
-            if (err < 0) {
-                uprintf("Error formatting filesystem: %d\n", err);
-            }
-
-            err = rp2040_mount_lfs(&lfs);
-            if (err < 0) {
-                uprintf("Error mounting filesystem: %d\n", err);
-            }
-            break;
-        case id_magnum_set_time:
-            uprintf("Set time\n");
-            break;
-        default:
-            uprintf("Invalid command\n");
-            break;
+        break;
+    case id_module_create_image_animated:
+        struct img_create_animated_packet *create_animated_packet = \
+            (struct img_create_animated_packet *)command_data;
+        break;
+    case id_module_open_image:
+        uprintf("Open image\n");
+        break;
+    case id_module_write_image:
+        uprintf("Write image\n");
+        break;
+    case id_module_close_image:
+        uprintf("Close image\n");
+        break;
+    case id_module_delete_image:
+        uprintf("Delete image\n");
+        break;
+    case id_module_choose_image:
+        uprintf("Choose image\n");
+        break;
+    case id_module_flash_remaining:
+        uprintf("Flash remaining\n");
+        break;
+    case id_module_format_filesystem:
+        uprintf("Format filesystem\n");
+        err = rp2040_format_lfs(&lfs);
+        if (err < 0) {
+            uprintf("Error formatting filesystem: %d\n", err);
+        }
+        err = rp2040_mount_lfs(&lfs);
+        if (err < 0) {
+            uprintf("Error mounting filesystem: %d\n", err);
+        }
+        break;
+    case id_module_set_time:
+        uprintf("Set time\n");
+        break;
+    default:
+        uprintf("Invalid command\n");
+        break;
     }
     uprintf("Data: %s\n", command_data);
     *command_id = 0xFF;
