@@ -11,9 +11,8 @@ static int parse_create_image(uint8_t *data, uint8_t length) {
     int err;
     uprintf("Create image\n");
 
-#if 0
     struct img_create_packet *create_packet = (struct img_create_packet *)data;
-
+#if 0
     err = lfs_file_open(&lfs, &lfs_current_file, create_packet->image_name, \
             LFS_O_RDWR | LFS_O_CREAT);
     if (err < 0) {
@@ -106,6 +105,7 @@ static module_raw_hid_parse_t* parse_packet_funcs[] = {
 int module_raw_hid_parse_packet(uint8_t *data, uint8_t length) {
     int err;
     uint8_t return_buf[RAW_EPSIZE] = {0};
+    memset(return_buf, 0, RAW_EPSIZE);
 
     uint8_t command_id = data[1] - id_module_base;
     if (command_id >= id_module_end - id_module_base) {

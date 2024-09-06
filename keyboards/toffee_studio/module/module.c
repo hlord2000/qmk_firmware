@@ -8,6 +8,7 @@
 #include "qp.h"
 #include "qp_st7735.h"
 #include "graphics/thintel15.qff.c"
+#include "platforms/chibios/gpio.h"
 #include "qp_lvgl.h"
 #include "lvgl.h"
 
@@ -32,7 +33,7 @@ static painter_font_handle_t font;
 #include "qp_st7735_opcodes.h"
 
 __attribute__((weak)) void ui_init(void) {
-    oled = qp_st7735_make_spi_device(128, 160, 0xFF, OLED_DC_PIN, 0xFF, 8, 0);
+    oled = qp_st7735_make_spi_device(128, 128, 0xFF, OLED_DC_PIN, 0xFF, 8, 0);
     font = qp_load_font_mem(font_thintel15);
 
     qp_init(oled, QP_ROTATION_180);
@@ -52,7 +53,7 @@ __attribute__((weak)) void ui_init(void) {
         }
 
         lv_obj_t *background = lv_obj_create(lv_scr_act());
-        lv_obj_set_size(background, 128, 160);
+        lv_obj_set_size(background, 128, 128);
         lv_obj_set_style_bg_color(background, lv_color_hex(0xFF0000), 0);
     }
 }
@@ -60,10 +61,11 @@ __attribute__((weak)) void ui_init(void) {
 #ifdef QUANTUM_PAINTER_ENABLE
 void keyboard_post_init_kb(void) {
     // Init the display
+    setPinOutputPushPull(OLED_BL_PIN);
+    writePinHigh(OLED_BL_PIN);
     ui_init();
     keyboard_post_init_user();
 }
-
 void housekeeping_task_kb(void) {
     // Draw the display
 }
