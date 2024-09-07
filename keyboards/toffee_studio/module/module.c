@@ -6,7 +6,7 @@
 #include "file_system.h"
 #include "lfs.h"
 #include "qp.h"
-#include "qp_st7735.h"
+#include "qp_gc9107.h"
 #include "graphics/thintel15.qff.c"
 #include "platforms/chibios/gpio.h"
 #include "qp_lvgl.h"
@@ -30,17 +30,18 @@ static painter_device_t      oled;
 static painter_font_handle_t font;
 
 #include "qp_comms.h"
-#include "qp_st7735_opcodes.h"
+#include "qp_gc9xxx_opcodes.h"
 
 __attribute__((weak)) void ui_init(void) {
-    oled = qp_st7735_make_spi_device(128, 128, 0xFF, OLED_DC_PIN, 0xFF, 8, 0);
+    oled = qp_gc9107_make_spi_device(128, 128, 0xFF, OLED_DC_PIN, 0xFF, 8, 0);
     font = qp_load_font_mem(font_thintel15);
 
     qp_init(oled, QP_ROTATION_180);
 
+    #if 0
     qp_comms_start(oled);
-    qp_comms_command(oled, ST7735_SET_INVERSION_CTL);
     qp_comms_stop(oled);
+    #endif
 
     qp_power(oled, true);
 

@@ -18,3 +18,7 @@
 
 // LVGL Configuration
 #define QP_LVGL_TASK_PERIOD 40
+
+// RGB LED Configuration
+#define WS2812_DI_PIN GP13
+#define RGBLED_NUM 13
