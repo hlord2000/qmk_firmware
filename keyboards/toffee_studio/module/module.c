@@ -1,4 +1,3 @@
-#if 1
 #include <stdio.h>
 #include <string.h>
 #include "print.h"
@@ -34,28 +33,18 @@ static painter_font_handle_t font;
 
 __attribute__((weak)) void ui_init(void) {
     oled = qp_gc9107_make_spi_device(128, 128, 0xFF, OLED_DC_PIN, 0xFF, 8, 0);
-    font = qp_load_font_mem(font_thintel15);
 
     qp_init(oled, QP_ROTATION_180);
 
-    #if 0
-    qp_comms_start(oled);
-    qp_comms_stop(oled);
-    #endif
-
     qp_power(oled, true);
 
-    if (qp_lvgl_attach(oled)) {
-        volatile lv_fs_drv_t *result;
+    volatile lv_fs_drv_t *result;
 
+    if (qp_lvgl_attach(oled)) {
         result = lv_fs_littlefs_set_driver(LV_FS_LITTLEFS_LETTER, &lfs);
         if (result == NULL) {
             uprintf("Error mounting LFS");
         }
-
-        lv_obj_t *background = lv_obj_create(lv_scr_act());
-        lv_obj_set_size(background, 128, 128);
-        lv_obj_set_style_bg_color(background, lv_color_hex(0xFF0000), 0);
     }
 }
 
@@ -67,9 +56,7 @@ void keyboard_post_init_kb(void) {
     ui_init();
     keyboard_post_init_user();
 }
-void housekeeping_task_kb(void) {
-    // Draw the display
-}
+
 #endif //QUANTUM_PAINTER_ENABLE
 
 void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
@@ -81,6 +68,3 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
     }
 }
 #endif
-#endif
-
-

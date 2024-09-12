@@ -10,6 +10,6 @@ SRC += rawhid/module_raw_hid.c
 
 VPATH += keyboards/toffee_studio/module/rawhid
 
-RGBLIGHT_ENABLE = yes
-RGBLIGHT_DRIVER = ws2812
-WS2812_DRIVER = vendor
+#RGBLIGHT_ENABLE = yes
+#RGBLIGHT_DRIVER = ws2812
+#WS2812_DRIVER = vendor

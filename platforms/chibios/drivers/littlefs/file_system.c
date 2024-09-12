@@ -1,4 +1,5 @@
 #include "lfs.h"
+#include <stdint.h>
 #include <ch.h>
 #include "hardware/flash.h"
 #include "hardware/sync.h"
@@ -81,7 +82,7 @@ const struct lfs_config cfg = {
     .read_size = 1,
     .prog_size = FLASH_PAGE_SIZE,
     .block_size = FLASH_SECTOR_SIZE,
-    .block_count = 8,
+    .block_count = 128,
     .cache_size = FLASH_SECTOR_SIZE / 4,
     .lookahead_size = 32,
     .block_cycles = 1000,
