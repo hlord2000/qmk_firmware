@@ -10,82 +10,72 @@
 extern char __flash_binary_end;
 #define FLASH_BINARY_END (((uintptr_t)&__flash_binary_end + 0x1000) & ~0xFFF)
 #define FILE_SYSTEM_RP2040_FLASH_BASE (FLASH_BINARY_END - XIP_BASE)
-
-#define FS_SIZE (16 * 4096)
+#define FS_SIZE (8 * 1024 * 1024)  // 8MB filesystem
 
 static int rp2040_flash_read(const struct lfs_config *c, lfs_block_t block,
         lfs_off_t off, void *buffer, lfs_size_t size) {
-    const void *addr = (void *)((FILE_SYSTEM_RP2040_FLASH_BASE + (block * c->block_size) + off) + XIP_BASE);
-    memcpy(buffer, addr, size);
-    return 0;
+    const uint32_t addr = FILE_SYSTEM_RP2040_FLASH_BASE + (block * FLASH_SECTOR_SIZE) + off;
+    memcpy(buffer, (const void *)(addr + XIP_BASE), size);
+    return LFS_ERR_OK;
 }
 
 static int rp2040_flash_prog(const struct lfs_config *c, lfs_block_t block,
         lfs_off_t off, const void *buffer, lfs_size_t size) {
+    uint32_t addr = FILE_SYSTEM_RP2040_FLASH_BASE + (block * FLASH_SECTOR_SIZE) + off;
 
-    // The RP2040 requires 256 byte aligned writes, this checks the offset of the write.
-    if (off % 256 != 0) {
-        return -1;
+    // Check if write is aligned to page boundary
+    if (off % FLASH_PAGE_SIZE != 0 || size != FLASH_PAGE_SIZE) {
+        return LFS_ERR_INVAL;  // LittleFS should only send page-aligned writes
     }
 
-    // The RP2040 requires 256 byte aligned writes, this checks the size of the write buffer.
-    if (size % 256 != 0) {
-        return -1;
-    }
-
-    uint32_t flash = (FILE_SYSTEM_RP2040_FLASH_BASE + (block * c->block_size) + off);
-
-    // Lock the scheduler and disable interrupts.
     uint32_t interrupts = save_and_disable_interrupts();
-    // Write the data to flash. The base address is the end of the XIP region.
-    flash_range_program(flash, (uint8_t *)buffer, (size_t)size);
+    flash_range_program(addr, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(interrupts);
 
-    // Restore interrupts and unlock the scheduler.
-    return 0;
+    return LFS_ERR_OK;
 }
 
 static int rp2040_flash_erase(const struct lfs_config *c, lfs_block_t block) {
+    uint32_t addr = FILE_SYSTEM_RP2040_FLASH_BASE + (block * FLASH_SECTOR_SIZE);
 
-    // Make sure the block is within the range of the flash.
+    // Verify block is within bounds
     if (block >= c->block_count) {
-        return -1;
+        return LFS_ERR_INVAL;
     }
-
-    if (block >= FILE_SYSTEM_RP2040_FLASH_BASE / c->block_size) {
-        return -1;
-    }
-
-    uint32_t flash = (FILE_SYSTEM_RP2040_FLASH_BASE + (block * c->block_size));
 
     uint32_t interrupts = save_and_disable_interrupts();
-    flash_range_erase(flash, c->block_size);
+    flash_range_erase(addr, FLASH_SECTOR_SIZE);
     restore_interrupts(interrupts);
-    return 0;
+
+    return LFS_ERR_OK;
 }
 
 static int rp2040_flash_sync(const struct lfs_config *c) {
-    return 0;
+    return LFS_ERR_OK;
 }
 
-uint32_t read_buffer[FLASH_SECTOR_SIZE / 4];
-uint32_t prog_buffer[FLASH_SECTOR_SIZE / 4];
-uint32_t lookahead_buffer[32];
+// Static allocation of buffers (must be aligned)
+static uint32_t read_buffer[FLASH_PAGE_SIZE / sizeof(uint32_t)] __attribute__((aligned(4)));
+static uint32_t prog_buffer[FLASH_PAGE_SIZE / sizeof(uint32_t)] __attribute__((aligned(4)));
+static uint32_t lookahead_buffer[32] __attribute__((aligned(4)));  // Increased for larger filesystem
 
 const struct lfs_config cfg = {
-    // block device operations
+    // Block device operations
     .read  = rp2040_flash_read,
     .prog  = rp2040_flash_prog,
     .erase = rp2040_flash_erase,
     .sync  = rp2040_flash_sync,
-    // block device configuration
-    .read_size = 1,
-    .prog_size = FLASH_PAGE_SIZE,
-    .block_size = FLASH_SECTOR_SIZE,
-    .block_count = 128,
-    .cache_size = FLASH_SECTOR_SIZE / 4,
-    .lookahead_size = 32,
-    .block_cycles = 1000,
+
+    // Block device configuration
+    .read_size = 1,                    // Can read any size
+    .prog_size = FLASH_PAGE_SIZE,      // Must write exactly 256 bytes
+    .block_size = FLASH_SECTOR_SIZE,   // Each block is a 4KB sector
+    .block_count = FS_SIZE / FLASH_SECTOR_SIZE,  // 2048 blocks (8MB / 4KB)
+    .cache_size = FLASH_PAGE_SIZE,     // Cache size matches program size
+    .lookahead_size = 32,             // Increased lookahead for larger filesystem
+    .block_cycles = 500,              // Conservative wear leveling
+
+    // Static buffer configuration
     .read_buffer = read_buffer,
     .prog_buffer = prog_buffer,
     .lookahead_buffer = lookahead_buffer,
@@ -93,22 +83,20 @@ const struct lfs_config cfg = {
 
 int rp2040_mount_lfs(lfs_t *lfs) {
     int err = lfs_mount(lfs, &cfg);
-
-    // reformat if we can't mount the filesystem
-    // this should only happen on the first boot
     if (err) {
-        lfs_format(lfs, &cfg);
-        lfs_mount(lfs, &cfg);
+        err = lfs_format(lfs, &cfg);
+        if (err) {
+            return err;
+        }
+        err = lfs_mount(lfs, &cfg);
     }
-    return 0;
+    return err;
 }
 
 int rp2040_format_lfs(lfs_t *lfs) {
-    lfs_format(lfs, &cfg);
-    return 0;
+    return lfs_format(lfs, &cfg);
 }
 
 int rp2040_unmount_lfs(lfs_t *lfs) {
-    lfs_unmount(lfs);
-    return 0;
+    return lfs_unmount(lfs);
 }
