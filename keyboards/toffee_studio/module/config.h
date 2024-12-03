@@ -7,6 +7,9 @@
 
 #define QUANTUM_PAINTER_DISPLAY_TIMEOUT 0
 
+#undef PICO_FLASH_SIZE_BYTES
+#define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024)
+
 // SPI Configuration
 #define SPI_DRIVER SPID0
 #define SPI_SCK_PIN GP2

@@ -4,7 +4,8 @@
 
 lfs_t lfs;
 
-#undef PICO_FLASH_SIZE_BYTES
-#define PICO_FLASH_SIZE_BYTES 16 * 1024 * 1024
+#undef LFS_TRACE
+#define LFS_TRACE_(fmt, ...) \
+    uprintf("%s:%d:trace: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
 
 #endif
